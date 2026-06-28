@@ -23,9 +23,9 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
 
   static AppSettings _parse(Map m) {
     return AppSettings(
-      themeMode: ThemeMode.values.firstWhere(
+      themeMode: AppThemeMode.values.firstWhere(
         (e) => e.name == (m['themeMode'] as String? ?? 'system'),
-        orElse: () => ThemeMode.system,
+        orElse: () => AppThemeMode.system,
       ),
       disclaimerAccepted: m['disclaimerAccepted'] as bool? ?? false,
       lastBackupReminder: m['lastBackupReminder'] as String?,
@@ -46,7 +46,7 @@ class SettingsNotifier extends StateNotifier<AppSettings> {
   // 更新方法
   // ══════════════════════════════════
 
-  void setThemeMode(ThemeMode mode) {
+  void setThemeMode(AppThemeMode mode) {
     state = state.copyWith(themeMode: mode);
     _persist();
   }

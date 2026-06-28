@@ -1,7 +1,9 @@
+import 'package:flutter/material.dart' as material;
+
 /// 应用设置（key-value 形式持久化）
 class AppSettings {
   /// 主题模式
-  final ThemeMode themeMode;
+  final AppThemeMode themeMode;
 
   /// 是否已同意免责声明
   final bool disclaimerAccepted;
@@ -13,14 +15,14 @@ class AppSettings {
   final DateTime? lastValidationAt;
 
   const AppSettings({
-    this.themeMode = ThemeMode.system,
+    this.themeMode = AppThemeMode.system,
     this.disclaimerAccepted = false,
     this.lastBackupReminder,
     this.lastValidationAt,
   });
 
   AppSettings copyWith({
-    ThemeMode? themeMode,
+    AppThemeMode? themeMode,
     bool? disclaimerAccepted,
     String? lastBackupReminder,
     DateTime? lastValidationAt,
@@ -34,8 +36,21 @@ class AppSettings {
   }
 }
 
-enum ThemeMode {
+/// 应用主题模式（避免与 Flutter ThemeMode 冲突）
+enum AppThemeMode {
   system,
   light,
   dark;
+}
+
+/// 将 AppThemeMode 转换为 Flutter 的 ThemeMode
+material.ThemeMode toFlutterTheme(AppThemeMode mode) {
+  switch (mode) {
+    case AppThemeMode.system:
+      return material.ThemeMode.system;
+    case AppThemeMode.light:
+      return material.ThemeMode.light;
+    case AppThemeMode.dark:
+      return material.ThemeMode.dark;
+  }
 }

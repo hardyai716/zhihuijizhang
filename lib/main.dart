@@ -4,18 +4,15 @@
 /// 1. Flutter 绑定初始化
 /// 2. Hive 初始化 + 打开所有 Box
 /// 3. 数据完整性校验
-/// 4. 预设数据种子
-/// 5. 启动 Flutter UI
-///
-/// 启动屏：显示 logo + 加载动画，启动完成后进入 MainShell
+/// 4. 启动 Flutter UI（主题由 Provider 控制）
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/utils/error_guard.dart';
 import 'core/utils/app_log.dart';
 import 'data/sources/local/hive_local_data_source.dart';
-import 'data/repositories/category_repository.dart';
 import 'providers/providers.dart';
+import 'domain/entities/app_settings.dart';
 import 'theme/app_theme.dart';
 import 'pages/home_page.dart';
 
@@ -35,7 +32,6 @@ void main() async {
     await dataSource.init();
     AppLog.i('Main', '✓ Hive 初始化完成');
 
-    // 数据完整性校验
     final integrityError = dataSource.validateIntegrity();
     if (integrityError != null) {
       initError = integrityError.message;
@@ -49,13 +45,9 @@ void main() async {
     AppLog.e('Main', 'Hive 初始化失败', e, st);
   }
 
-  // 4. 初始化预设分类（通过 CategoryNotifier，它会自动 seed）
-  //    这一步移到 UI 层的 CategoryNotifier.load() 里做
-  //    这里只做 Hive 层校验
-
   AppLog.i('Main', '═══ 启动完成，进入 UI ═══');
 
-  // 5. 启动 UI
+  // 4. 启动 UI（主题由 settingsNotifierProvider 驱动）
   ErrorGuard.runGuarded(() {
     runApp(
       ProviderScope(
@@ -89,7 +81,13 @@ class SmartLedgerApp extends ConsumerWidget {
       );
     }
 
-    // 正常启动：触发数据加载
+    // 监听设置变化，驱动主题切换
+    final settings = ref.watch(settingsNotifierProvider);
+    final isDark = toFlutterTheme(settings.themeMode) == ThemeMode.dark ||
+        (toFlutterTheme(settings.themeMode) == ThemeMode.system &&
+            MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+
+    // 触发数据加载
     ref.read(categoryNotifierProvider.notifier).load();
     ref.read(transactionNotifierProvider.notifier).load();
 
@@ -97,6 +95,8 @@ class SmartLedgerApp extends ConsumerWidget {
       title: '智慧记账',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: isDark ? ThemeMode.dark : ThemeMode.light,
       home: const MainShell(),
     );
   }
@@ -117,8 +117,7 @@ class _BootErrorScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(Icons.error_outline,
-                  size: 64, color: AppTheme.expense),
+              const Icon(Icons.error_outline, size: 64, color: AppTheme.expense),
               const SizedBox(height: 16),
               const Text('应用启动失败',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600,
@@ -127,8 +126,7 @@ class _BootErrorScreen extends StatelessWidget {
               const SizedBox(height: 8),
               Text(message,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 14, color: AppTheme.textSecondary),
-              ),
+                style: const TextStyle(fontSize: 14, color: AppTheme.textSecondary)),
             ],
           ),
         ),
