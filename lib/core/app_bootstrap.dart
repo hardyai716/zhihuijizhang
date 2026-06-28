@@ -27,16 +27,12 @@ class AppBootstrap {
   AppBootstrap(this._dataSource);
   final HiveLocalDataSource _dataSource;
 
-  /// 完整启动流程
+/// 完整启动流程（Hive 初始化已在 main() 完成，这里只做校验）
   Future<Result<void>> run() async {
     try {
-      AppLog.i('Bootstrap', '═══ 智慧记账启动 ═══');
+      AppLog.i('Bootstrap', '═══ 智慧记账启动校验 ═══');
 
-      // 1. Hive 初始化
-      await _dataSource.init();
-      AppLog.i('Bootstrap', '✓ Hive 就绪');
-
-      // 2. 数据完整性校验
+      // 1. 数据完整性校验
       final integrityError = _dataSource.validateIntegrity();
       if (integrityError != null) {
         AppLog.e('Bootstrap', '✗ 数据校验失败', integrityError);
@@ -44,7 +40,7 @@ class AppBootstrap {
       }
       AppLog.i('Bootstrap', '✓ 数据完整性校验通过');
 
-      AppLog.i('Bootstrap', '═══ 启动完成 ═══');
+      AppLog.i('Bootstrap', '═══ 启动校验完成 ═══');
       return const Ok(null);
     } catch (e, st) {
       AppLog.e('Bootstrap', '启动异常', e, st);

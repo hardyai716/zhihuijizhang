@@ -110,7 +110,7 @@ final transactionNotifierProvider =
     StateNotifierProvider<TransactionNotifier, TransactionState>((ref) {
   return TransactionNotifier(
     ref.watch(transactionRepositoryProvider),
-    ref.watch(categoryNotifierProvider),
+    ref.watch(categoryNotifierProvider.notifier),
   );
 });
 
@@ -124,10 +124,11 @@ final settingsNotifierProvider =
   return SettingsNotifier(ref.watch(hiveDataSourceProvider));
 });
 
-/// 启动初始化 Provider —— 在 main() 触发整个数据层初始化
+/// 启动初始化 Provider —— 在 main() Hive 初始化完成后触发业务逻辑初始化
 final initializationProvider = FutureProvider<InitResult>((ref) async {
   final hive = ref.read(hiveDataSourceProvider);
-  await hive.init();
+
+  // Hive 已在 main() 里初始化完成，这里无需再调用 init()
 
   // 校验数据完整性
   final integrityError = hive.validateIntegrity();

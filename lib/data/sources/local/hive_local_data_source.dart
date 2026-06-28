@@ -22,32 +22,43 @@ class HiveLocalDataSource {
   static final HiveLocalDataSource instance = HiveLocalDataSource._();
 
   // ══════════════════════════════════
-  // Box 句柄
+  // Box 句柄（用可空类型，避免 late final 重复初始化问题）
   // ══════════════════════════════════
 
-  late final Box<TransactionModel> _txBox;
-  late final Box<CategoryModel> _catBox;
-  late final Box<BudgetModel> _budgetBox;
-  late final Box<TransactionTemplateModel> _tplBox;
-  late final Box _settingsBox;
-  late final Box _metaBox;
+  Box<TransactionModel>? _txBox;
+  Box<CategoryModel>? _catBox;
+  Box<BudgetModel>? _budgetBox;
+  Box<TransactionTemplateModel>? _tplBox;
+  Box? _settingsBox;
+  Box? _metaBox;
 
   bool _initialized = false;
+  bool _initializing = false; // 防并发
 
   // ══════════════════════════════════
   // 初始化
   // ══════════════════════════════════
 
-  /// 启动时调用一次
+  /// 启动时调用一次（幂等，防并发）
   Future<void> init() async {
+    // 已初始化，直接返回
     if (_initialized) return;
+    // 正在初始化，等待完成
+    if (_initializing) {
+      AppLog.storage('init() 正在进行中，等待完成...');
+      while (_initializing && !_initialized) {
+        await Future.delayed(const Duration(milliseconds: 50));
+      }
+      return;
+    }
 
+    _initializing = true;
     try {
-      // 1. 初始化 Flutter 绑定
+      // 1. 初始化 Hive
       await _initHive();
       AppLog.storage('Hive 初始化完成');
 
-      // 2. 注册 Adapter
+      // 2. 注册 Adapter（防重复注册）
       if (!Hive.isAdapterRegistered(AppConstants.typeIdTransaction)) {
         Hive.registerAdapter(TransactionModelAdapter());
       }
@@ -62,28 +73,34 @@ class HiveLocalDataSource {
       }
       AppLog.storage('Adapter 注册完成');
 
-      // 3. 打开所有 Box
-      _txBox = await Hive.openBox<TransactionModel>(
-        AppConstants.boxTransactions,
-      );
-      _catBox = await Hive.openBox<CategoryModel>(
-        AppConstants.boxCategories,
-      );
-      _budgetBox = await Hive.openBox<BudgetModel>(
-        AppConstants.boxBudgets,
-      );
-      _tplBox = await Hive.openBox<TransactionTemplateModel>(
-        AppConstants.boxTemplates,
-      );
-      _settingsBox = await Hive.openBox(AppConstants.boxSettings);
-      _metaBox = await Hive.openBox(AppConstants.boxMeta);
+      // 3. 打开所有 Box（热重启安全）
+      _txBox = Hive.isBoxOpen(AppConstants.boxTransactions)
+          ? Hive.box<TransactionModel>(AppConstants.boxTransactions)
+          : await Hive.openBox<TransactionModel>(AppConstants.boxTransactions);
+      _catBox = Hive.isBoxOpen(AppConstants.boxCategories)
+          ? Hive.box<CategoryModel>(AppConstants.boxCategories)
+          : await Hive.openBox<CategoryModel>(AppConstants.boxCategories);
+      _budgetBox = Hive.isBoxOpen(AppConstants.boxBudgets)
+          ? Hive.box<BudgetModel>(AppConstants.boxBudgets)
+          : await Hive.openBox<BudgetModel>(AppConstants.boxBudgets);
+      _tplBox = Hive.isBoxOpen(AppConstants.boxTemplates)
+          ? Hive.box<TransactionTemplateModel>(AppConstants.boxTemplates)
+          : await Hive.openBox<TransactionTemplateModel>(AppConstants.boxTemplates);
+      _settingsBox = Hive.isBoxOpen(AppConstants.boxSettings)
+          ? Hive.box(AppConstants.boxSettings)
+          : await Hive.openBox(AppConstants.boxSettings);
+      _metaBox = Hive.isBoxOpen(AppConstants.boxMeta)
+          ? Hive.box(AppConstants.boxMeta)
+          : await Hive.openBox(AppConstants.boxMeta);
 
       _initialized = true;
       AppLog.storage('所有 Box 打开完成');
     } catch (e, st) {
+      _initializing = false; // 失败重置，允许重试
       AppLog.e(AppConstants.logTagStorage, 'Hive 初始化失败', e, st);
       rethrow;
     }
+    _initializing = false;
   }
 
   Future<void> _initHive() async {
@@ -94,31 +111,37 @@ class HiveLocalDataSource {
   /// 完全清理（用于卸载/重置）
   Future<void> clearAll() async {
     if (!_initialized) return;
-    await _txBox.clear();
-    await _catBox.clear();
-    await _budgetBox.clear();
-    await _tplBox.clear();
-    await _settingsBox.clear();
-    await _metaBox.clear();
+    await _txBox?.clear();
+    await _catBox?.clear();
+    await _budgetBox?.clear();
+    await _tplBox?.clear();
+    await _settingsBox?.clear();
+    await _metaBox?.clear();
     AppLog.storage('所有数据已清空');
   }
 
-  /// 关闭所有 Box
+  /// 关闭所有 Box 并重置状态
   Future<void> close() async {
     if (!_initialized) return;
     await Hive.close();
+    _txBox = null;
+    _catBox = null;
+    _budgetBox = null;
+    _tplBox = null;
+    _settingsBox = null;
+    _metaBox = null;
     _initialized = false;
+    AppLog.storage('所有 Box 已关闭并重置');
   }
 
   /// 数据完整性校验 —— 启动时调用
   /// 返回 null 表示正常；返回 CorruptedDataFailure 表示损坏
   Failure? validateIntegrity() {
     try {
-      // 触发一次读，确保文件不损坏
-      _txBox.values.length;
-      _catBox.values.length;
-      _budgetBox.values.length;
-      _tplBox.values.length;
+      _txBox?.values.length;
+      _catBox?.values.length;
+      _budgetBox?.values.length;
+      _tplBox?.values.length;
       return null;
     } catch (e, st) {
       AppLog.e(AppConstants.logTagStorage, '数据完整性校验失败', e, st);
@@ -130,10 +153,10 @@ class HiveLocalDataSource {
   // 公共 Getter（供 Repository 使用）
   // ══════════════════════════════════
 
-  Box<TransactionModel> get transactions => _txBox;
-  Box<CategoryModel> get categories => _catBox;
-  Box<BudgetModel> get budgets => _budgetBox;
-  Box<TransactionTemplateModel> get templates => _tplBox;
-  Box get settings => _settingsBox;
-  Box get meta => _metaBox;
+  Box<TransactionModel> get transactions => _txBox!;
+  Box<CategoryModel> get categories => _catBox!;
+  Box<BudgetModel> get budgets => _budgetBox!;
+  Box<TransactionTemplateModel> get templates => _tplBox!;
+  Box get settings => _settingsBox!;
+  Box get meta => _metaBox!;
 }

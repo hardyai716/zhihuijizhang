@@ -98,19 +98,20 @@ class TransactionNotifier extends StateNotifier<TransactionState> {
   TransactionNotifier(this._repo, this._catNotifier) : super(const TransactionState()) {
     load();
     // 监听分类变化，自动重新筛选
-    _catNotifier.addListener(_onCategoryChanged);
+    _removeCatListener = _catNotifier.addListener(_onCategoryChanged);
   }
 
   final TransactionRepository _repo;
   final CategoryNotifier _catNotifier;
+  late final void Function() _removeCatListener;
 
   @override
   void dispose() {
-    _catNotifier.removeListener(_onCategoryChanged);
+    _removeCatListener();
     super.dispose();
   }
 
-  void _onCategoryChanged() {
+  void _onCategoryChanged(CategoryState _) {
     // 分类变化时重新应用筛选（分类名变化会影响搜索结果）
     if (state.filter.keyword.isNotEmpty) {
       applyFilter(state.filter);

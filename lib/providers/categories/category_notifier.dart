@@ -131,11 +131,10 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
   }
 
   /// 强制删除（先迁移记录到目标分类）
-  Failure? deleteAndMigrate(String id, String migrateToCategoryId) {
-    // 1. 迁移该分类下所有记录
-    final txResult = _repo // 这里需要通过 TransactionRepository
-    // 为避免循环依赖，UI 层应先调用 TransactionRepository.migrateCategory()
-    return delete(id, force: true);
+  /// UI 层应先调用 TransactionRepository.migrateCategory() 迁移记录，
+  /// 再调用此方法绕过业务规则强制删除分类。
+  Failure? deleteAndMigrate(String id) {
+    return deleteWithForce(id);
   }
 
   /// 强制删除（绕过业务规则）

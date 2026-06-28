@@ -36,3 +36,5 @@
 - **删除分类时默认拒绝**：若有记录需先迁移到其他分类（CategoryInUseFailure）
 - **备份不加密**：数据自主=用户自管，加密反而是限制
 - **Result<T> 替代异常**：业务方法不抛异常，全部返回 Result 强制编译期处理
+- **APK 已构建成功**：smart-ledger-v1.apk（48MB），含 3 架构 .so，GitHub 仓库 hardyai716/zhihuijizhang
+- **Android 工具链**：JDK17(Corretto) + SDK36 + NDK28 + Gradle9.1，环境变量见 memory/2026-06-28.md 阶段八

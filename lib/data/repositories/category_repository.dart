@@ -132,8 +132,10 @@ class CategoryRepository {
       for (int i = 0; i < orderedIds.length; i++) {
         final m = _local.categories.get(orderedIds[i]);
         if (m == null) continue;
-        m.sortOrder = i;
-        m.save();
+        _local.categories.put(orderedIds[i], CategoryModel(
+          id: m.id, name: m.name, icon: m.icon, kind: m.kind,
+          sortOrder: i, createdAt: m.createdAt, updatedAt: m.updatedAt,
+        ));
       }
       AppLog.repo('重新排序 ${orderedIds.length} 个分类');
       return const Ok(null);

@@ -39,7 +39,7 @@ class ExportService {
   // CSV 导出
   // ══════════════════════════════════
 
-  Result<ExportResult> exportToCsv({
+  Future<Result<ExportResult>> exportToCsv({
     DateTime? startDate,
     DateTime? endDate,
   }) async {
@@ -107,7 +107,7 @@ class ExportService {
   // JSON 导出（完整结构，含分类）
   // ══════════════════════════════════
 
-  Result<ExportResult> exportToJson() async {
+  Future<Result<ExportResult>> exportToJson() async {
     try {
       final txResult = _txRepo.getAll();
       if (txResult.isErr) return Err(txResult.failureOrNull!);

@@ -54,12 +54,12 @@ class BudgetService {
 
     final statuses = budgets.map((b) {
       final spent = spentByCat[b.categoryId] ?? 0;
-      final progress = b.limitAmount > 0 ? spent / b.limitAmount : 0;
+      final progress = b.limitAmount > 0 ? spent / b.limitAmount : 0.0;
       return BudgetStatus(
         budget: b,
         spent: spent,
         remaining: b.limitAmount - spent,
-        progress: progress,
+        progress: progress.toDouble(),
       );
     }).toList();
 

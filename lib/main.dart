@@ -18,14 +18,21 @@ import 'providers/providers.dart';
 import 'theme/app_theme.dart';
 import 'pages/home_page.dart';
 
-void main() {
+void main() async {
   // 1. 错误捕获必须最先
   ErrorGuard.install();
 
   // 2. Flutter 绑定
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 3. 同步运行 UI，启动屏展示加载状态
+  // 3. Hive 初始化（在 runApp 之前完成，避免并发初始化）
+  final bootstrap = AppBootstrap(HiveLocalDataSource.instance);
+  final initResult = await bootstrap.run();
+  if (initResult.isErr) {
+    AppLog.e('Main', 'Hive 初始化失败: ${initResult.failureOrNull!.message}');
+  }
+
+  // 4. 启动 UI
   ErrorGuard.runGuarded(() {
     runApp(
       ProviderScope(
@@ -46,16 +53,7 @@ class _SmartLedgerAppState extends ConsumerState<SmartLedgerApp> {
   @override
   void initState() {
     super.initState();
-    _bootstrap();
-  }
-
-  Future<void> _bootstrap() async {
-    final bootstrap = AppBootstrap(HiveLocalDataSource.instance);
-    final result = await bootstrap.run();
-    if (result.isErr) {
-      AppLog.e('Main', '启动失败: ${result.failureOrNull!.message}');
-      // TODO: 显示错误屏 + 提供"清除数据"或"恢复备份"入口
-    }
+    // Hive 已在 main() 里初始化完成，这里无需再做
   }
 
   @override

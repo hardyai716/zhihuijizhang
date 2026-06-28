@@ -652,9 +652,9 @@ class CategoryMgmtPage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          _catGroup('支出分类', catState.expenseCategories),
+          _catGroup(context, ref, '支出分类', catState.expenseCategories),
           const SizedBox(height: 20),
-          _catGroup('收入分类', catState.incomeCategories),
+          _catGroup(context, ref, '收入分类', catState.incomeCategories),
           const SizedBox(height: 16),
           // 新增分类按钮
           OutlinedButton.icon(
@@ -675,7 +675,7 @@ class CategoryMgmtPage extends ConsumerWidget {
     );
   }
 
-  Widget _catGroup(String title, List<Category> categories) {
+  Widget _catGroup(BuildContext context, WidgetRef ref, String title, List<Category> categories) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -693,7 +693,7 @@ class CategoryMgmtPage extends ConsumerWidget {
           clipBehavior: Clip.antiAlias,
           child: Column(
             children: categories.map((c) => InkWell(
-              onTap: () => _showEditDialog(context, c),
+              onTap: () => _showEditDialog(context, ref, c),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 child: Row(
@@ -707,7 +707,7 @@ class CategoryMgmtPage extends ConsumerWidget {
                     ),
                     IconButton(
                       icon: const Icon(Icons.delete_outline, size: 20, color: AppTheme.textTertiary),
-                      onPressed: () => _confirmAndDelete(context, c),
+                      onPressed: () => _confirmAndDelete(context, ref, c),
                     ),
                     ReorderableDragStartListener(
                       index: categories.indexOf(c),
@@ -723,7 +723,7 @@ class CategoryMgmtPage extends ConsumerWidget {
     );
   }
 
-  void _confirmAndDelete(BuildContext context, Category c) {
+  void _confirmAndDelete(BuildContext context, WidgetRef ref, Category c) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -817,7 +817,7 @@ class CategoryMgmtPage extends ConsumerWidget {
     );
   }
 
-  void _showEditDialog(BuildContext context, Category cat) {
+  void _showEditDialog(BuildContext context, WidgetRef ref, Category cat) {
     final nameCtrl = TextEditingController(text: cat.name);
     showDialog(
       context: context,
