@@ -6,6 +6,14 @@
 .pub/
 build/
 
+# Binaries (不要入库)
+*.apk
+*.aab
+*.ipa
+
+# WorkBuddy screenshots
+.workbuddy/screenshots/
+
 # IDE
 .idea/
 .vscode/
