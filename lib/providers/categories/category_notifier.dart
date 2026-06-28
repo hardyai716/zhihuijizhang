@@ -72,6 +72,10 @@ class CategoryNotifier extends StateNotifier<CategoryState> {
 
   Future<void> load() async {
     state = state.copyWith(isLoading: true, errorMessage: null);
+
+    // 首次启动时初始化预设分类
+    _repo.seedDefaultsIfEmpty();
+
     final result = _repo.getAll();
     if (result.isErr) {
       state = state.copyWith(

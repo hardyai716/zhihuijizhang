@@ -1,19 +1,20 @@
 /// 智慧记账 - 应用入口
 ///
-/// 启动流程：
+/// 启动流程（全部在 runApp 之前同步完成）：
 /// 1. Flutter 绑定初始化
-/// 2. 全局错误捕获安装
-/// 3. 异步初始化 Hive（AppBootstrap）
-/// 4. 启动 Flutter UI（ProviderScope 包裹）
+/// 2. Hive 初始化 + 打开所有 Box
+/// 3. 数据完整性校验
+/// 4. 预设数据种子
+/// 5. 启动 Flutter UI
 ///
 /// 启动屏：显示 logo + 加载动画，启动完成后进入 MainShell
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'core/app_bootstrap.dart';
 import 'core/utils/error_guard.dart';
 import 'core/utils/app_log.dart';
 import 'data/sources/local/hive_local_data_source.dart';
+import 'data/repositories/category_repository.dart';
 import 'providers/providers.dart';
 import 'theme/app_theme.dart';
 import 'pages/home_page.dart';
@@ -25,105 +26,78 @@ void main() async {
   // 2. Flutter 绑定
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 3. Hive 初始化（在 runApp 之前完成，避免并发初始化）
-  final bootstrap = AppBootstrap(HiveLocalDataSource.instance);
-  final initResult = await bootstrap.run();
-  if (initResult.isErr) {
-    AppLog.e('Main', 'Hive 初始化失败: ${initResult.failureOrNull!.message}');
+  // 3. Hive 初始化（同步等待，确保完成后再进入 UI）
+  final dataSource = HiveLocalDataSource.instance;
+  var initOk = false;
+  String? initError;
+
+  try {
+    await dataSource.init();
+    AppLog.i('Main', '✓ Hive 初始化完成');
+
+    // 数据完整性校验
+    final integrityError = dataSource.validateIntegrity();
+    if (integrityError != null) {
+      initError = integrityError.message;
+      AppLog.e('Main', '数据校验失败: $initError');
+    } else {
+      initOk = true;
+      AppLog.i('Main', '✓ 数据完整性校验通过');
+    }
+  } catch (e, st) {
+    initError = e.toString();
+    AppLog.e('Main', 'Hive 初始化失败', e, st);
   }
 
-  // 4. 启动 UI
+  // 4. 初始化预设分类（通过 CategoryNotifier，它会自动 seed）
+  //    这一步移到 UI 层的 CategoryNotifier.load() 里做
+  //    这里只做 Hive 层校验
+
+  AppLog.i('Main', '═══ 启动完成，进入 UI ═══');
+
+  // 5. 启动 UI
   ErrorGuard.runGuarded(() {
     runApp(
       ProviderScope(
-        child: const SmartLedgerApp(),
+        child: SmartLedgerApp(
+          initOk: initOk,
+          initError: initError,
+        ),
       ),
     );
   });
 }
 
-class SmartLedgerApp extends ConsumerStatefulWidget {
-  const SmartLedgerApp({super.key});
+class SmartLedgerApp extends ConsumerWidget {
+  final bool initOk;
+  final String? initError;
+
+  const SmartLedgerApp({
+    super.key,
+    required this.initOk,
+    this.initError,
+  });
 
   @override
-  ConsumerState<SmartLedgerApp> createState() => _SmartLedgerAppState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    if (!initOk) {
+      return MaterialApp(
+        title: '智慧记账',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.lightTheme,
+        home: _BootErrorScreen(message: initError ?? '未知错误'),
+      );
+    }
 
-class _SmartLedgerAppState extends ConsumerState<SmartLedgerApp> {
-  @override
-  void initState() {
-    super.initState();
-    // Hive 已在 main() 里初始化完成，这里无需再做
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final initState = ref.watch(initializationProvider);
+    // 正常启动：触发数据加载
+    ref.read(categoryNotifierProvider.notifier).load();
+    ref.read(transactionNotifierProvider.notifier).load();
 
     return MaterialApp(
       title: '智慧记账',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: initState.when(
-        data: (result) {
-          if (result.success) {
-            return const MainShell();
-          }
-          return _BootErrorScreen(message: result.errorMessage ?? '未知错误');
-        },
-        loading: () => const _SplashScreen(),
-        error: (e, st) => _BootErrorScreen(message: e.toString()),
-      ),
-    );
-  }
-}
-
-/// 启动屏
-class _SplashScreen extends StatelessWidget {
-  const _SplashScreen();
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.background,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 80, height: 80,
-              decoration: BoxDecoration(
-                gradient: const LinearGradient(
-                  colors: [AppTheme.primaryGradientStart, AppTheme.primaryGradientEnd],
-                  begin: Alignment.topLeft, end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: AppTheme.shadowMd,
-              ),
-              child: const Icon(Icons.account_balance_wallet_rounded,
-                  size: 40, color: AppTheme.textOnPrimary),
-            ),
-            const SizedBox(height: 24),
-            const Text('智慧记账',
-              style: TextStyle(
-                fontSize: 20, fontWeight: FontWeight.w700,
-                color: AppTheme.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text('极速 · 纯净 · 自主',
-              style: TextStyle(fontSize: 12, color: AppTheme.textTertiary),
-            ),
-            const SizedBox(height: 32),
-            const SizedBox(
-              width: 24, height: 24,
-              child: CircularProgressIndicator(
-                strokeWidth: 2.5, color: AppTheme.primary,
-              ),
-            ),
-          ],
-        ),
-      ),
+      home: const MainShell(),
     );
   }
 }

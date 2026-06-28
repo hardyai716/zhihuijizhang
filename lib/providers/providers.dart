@@ -5,13 +5,10 @@
 /// - 业务服务（StatsService/SearchService/ExportService）也用 Provider 暴露
 /// - DataSource 单例 + Repository 通过 Provider 注入
 ///
-/// AsyncNotifier vs StateNotifier：
-/// - 启动时初始化（loadAll）→ 用 AsyncNotifier
-/// - 纯计算 → 用 Provider（不变化）
-/// - 用户操作驱动 → AsyncNotifier（含 loading/error 状态）
+/// 注意：Hive 初始化全部在 main() 里完成，不在这里做。
+/// 初始化流程见 lib/main.dart
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../core/utils/app_log.dart';
 import '../data/sources/local/hive_local_data_source.dart';
 import '../data/repositories/transaction_repository.dart';
 import '../data/repositories/category_repository.dart';
@@ -123,40 +120,3 @@ final settingsNotifierProvider =
     StateNotifierProvider<SettingsNotifier, AppSettings>((ref) {
   return SettingsNotifier(ref.watch(hiveDataSourceProvider));
 });
-
-/// 启动初始化 Provider —— 在 main() Hive 初始化完成后触发业务逻辑初始化
-final initializationProvider = FutureProvider<InitResult>((ref) async {
-  final hive = ref.read(hiveDataSourceProvider);
-
-  // Hive 已在 main() 里初始化完成，这里无需再调用 init()
-
-  // 校验数据完整性
-  final integrityError = hive.validateIntegrity();
-  if (integrityError != null) {
-    return InitResult.failed(integrityError.message);
-  }
-
-  // 初始化预设数据
-  final catRepo = ref.read(categoryRepositoryProvider);
-  final seedResult = catRepo.seedDefaultsIfEmpty();
-  if (seedResult.isErr) {
-    return InitResult.failed(seedResult.failureOrNull!.message);
-  }
-
-  // 触发数据加载
-  await ref.read(categoryNotifierProvider.notifier).load();
-  await ref.read(transactionNotifierProvider.notifier).load();
-
-  AppLog.i('Init', '应用初始化完成');
-  return InitResult.ok();
-});
-
-class InitResult {
-  final bool success;
-  final String? errorMessage;
-  const InitResult._({required this.success, this.errorMessage});
-
-  factory InitResult.ok() => const InitResult._(success: true);
-  factory InitResult.failed(String msg) =>
-      InitResult._(success: false, errorMessage: msg);
-}
