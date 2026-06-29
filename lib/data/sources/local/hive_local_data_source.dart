@@ -7,6 +7,7 @@
 ///
 /// 不在这里放业务逻辑！业务逻辑在 Repository / Service
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import '../../../core/constants/app_constants.dart';
@@ -104,8 +105,13 @@ class HiveLocalDataSource {
   }
 
   Future<void> _initHive() async {
-    final dir = await getApplicationDocumentsDirectory();
-    Hive.init(dir.path);
+    if (kIsWeb) {
+      // Web 平台没有 path_provider，用 IndexedDB 后端即可（无需目录）
+      await Hive.initFlutter();
+    } else {
+      final dir = await getApplicationDocumentsDirectory();
+      Hive.init(dir.path);
+    }
   }
 
   /// 完全清理（用于卸载/重置）

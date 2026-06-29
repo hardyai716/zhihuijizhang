@@ -697,7 +697,7 @@ class _AddFlowShellState extends ConsumerState<AddFlowShell> {
     final c = context.colors;
     return WillPopScope(onWillPop: () async { _prev(); return false; },
       child: Scaffold(backgroundColor: c.background, body: SafeArea(child: IndexedStack(index: _step, children: [
-        _StepCategory(kind: _kind, onSelect: (id) { _categoryId = id; _next(); }, onBack: _prev),
+        _StepCategory(kind: _kind, onSelect: (id) { _categoryId = id; _next(); }, onBack: _prev, onChangeKind: (k) => setState(() => _kind = k)),
         _StepAmount(categoryId: _categoryId ?? '', kind: _kind, onChangeKind: (k) => setState(() => _kind = k),
             onConfirm: (amount) { _amount = amount; _next(); }, onBack: _prev),
         _StepNote(amount: _amount, categoryId: _categoryId ?? '', kind: _kind, note: _note, onNoteChanged: (v) => _note = v,
@@ -712,25 +712,64 @@ class _AddFlowShellState extends ConsumerState<AddFlowShell> {
   }
 }
 
-// Step 1: 选分类
+// Step 1: 选分类（带支出/收入切换 + 新增类目）
 class _StepCategory extends ConsumerWidget {
-  final TransactionKind kind; final void Function(String) onSelect; final VoidCallback onBack;
-  const _StepCategory({required this.kind, required this.onSelect, required this.onBack});
+  final TransactionKind kind;
+  final void Function(String) onSelect;
+  final VoidCallback onBack;
+  final ValueChanged<TransactionKind> onChangeKind;
+
+  const _StepCategory({required this.kind, required this.onSelect, required this.onBack, required this.onChangeKind});
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final catState = ref.watch(categoryNotifierProvider);
     final categories = kind == TransactionKind.expense ? catState.expenseCategories : catState.incomeCategories;
+    final c = context.colors;
+
     return Column(children: [
       _topBar('选择分类', onBack: onBack),
+      // 支出/收入切换（显眼）
+      Container(padding: const EdgeInsets.all(4),
+        decoration: BoxDecoration(color: c.surfaceSecondary, borderRadius: BorderRadius.circular(AppTheme.radiusFull)),
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: Row(children: [
+          _expIncBtn(c, '支出', TransactionKind.expense),
+          _expIncBtn(c, '收入', TransactionKind.income),
+        ])),
       Expanded(child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: CategoryGrid(
           categories: categories,
-          onSelect: (c) => onSelect(c.id),
+          onSelect: (cat) => onSelect(cat.id),
           onAddNew: () => _showAddDialog(context, ref),
         ),
       )),
     ]);
+  }
+
+  Widget _expIncBtn(ContextColors c, String label, TransactionKind k) {
+    final active = kind == k;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onChangeKind(k),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: active
+              ? BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(AppTheme.radiusFull))
+              : null,
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+              color: active ? c.primary : c.textSecondary,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _showAddDialog(BuildContext context, WidgetRef ref) {
