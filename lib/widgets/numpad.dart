@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../core/utils/theme_utils.dart';
 
 /// 数字键盘组件
 /// 设计稿位置: 记账-输金额 3:7
@@ -17,36 +18,33 @@ class NumberPad extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Column(
       children: [
-        // 1 2 3
-        _buildRow(['1', '2', '3']),
+        _buildRow(context, ['1', '2', '3']),
         const SizedBox(height: 1),
-        // 4 5 6
-        _buildRow(['4', '5', '6']),
+        _buildRow(context, ['4', '5', '6']),
         const SizedBox(height: 1),
-        // 7 8 9
-        _buildRow(['7', '8', '9']),
+        _buildRow(context, ['7', '8', '9']),
         const SizedBox(height: 1),
-        // . 0 ⌫
         Row(
           children: [
-            _buildKey('.', flex: 1),
+            _buildKey(context, '.', flex: 1),
             const SizedBox(width: 1),
-            _buildKey('0', flex: 1),
+            _buildKey(context, '0', flex: 1),
             const SizedBox(width: 1),
             Expanded(
               flex: 1,
               child: _ActionKey(
                 onTap: onDelete,
-                child: const Icon(Icons.backspace_outlined,
-                    size: 26, color: AppTheme.textSecondary),
+                color: c.surface,
+                child: Icon(Icons.backspace_outlined,
+                    size: 26, color: c.textSecondary),
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
-        // ✓ 确认按钮
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 1),
           child: _ActionKey(
@@ -60,28 +58,30 @@ class NumberPad extends StatelessWidget {
     );
   }
 
-  Widget _buildRow(List<String> keys) {
+  Widget _buildRow(BuildContext context, List<String> keys) {
     return Row(
       children: [
         for (int i = 0; i < keys.length; i++) ...[
-          _buildKey(keys[i], flex: 1),
+          _buildKey(context, keys[i], flex: 1),
           if (i < keys.length - 1) const SizedBox(width: 1),
         ],
       ],
     );
   }
 
-  Widget _buildKey(String value, {int flex = 1}) {
+  Widget _buildKey(BuildContext context, String value, {int flex = 1}) {
+    final c = context.colors;
     return Expanded(
       flex: flex,
       child: _ActionKey(
         onTap: () => onKeyTap(value),
+        color: c.surface,
         child: Text(
           value,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.w500,
-            color: AppTheme.textPrimary,
+            color: c.textPrimary,
             fontFamily: AppTheme.fontFamilyNumber,
           ),
         ),
@@ -108,7 +108,7 @@ class _ActionKey extends StatelessWidget {
     return SizedBox(
       height: height,
       child: Material(
-        color: color ?? AppTheme.surface,
+        color: color ?? Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
         child: InkWell(
           onTap: onTap,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../core/utils/theme_utils.dart';
 import '../domain/entities/category.dart';
 
 /// 分类选择网格
@@ -18,17 +19,18 @@ class CategoryGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           child: Text(
             '选择分类',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w600,
-              color: AppTheme.textPrimary,
+              color: c.textPrimary,
               fontFamily: AppTheme.fontFamilyText,
             ),
           ),
@@ -39,9 +41,9 @@ class CategoryGrid extends StatelessWidget {
             spacing: 12,
             runSpacing: 12,
             children: [
-              ...categories.map((c) => _CategoryTile(
-                    category: c,
-                    onTap: () => onSelect(c),
+              ...categories.map((cat) => _CategoryTile(
+                    category: cat,
+                    onTap: () => onSelect(cat),
                   )),
               _AddCategoryTile(onTap: onAddNew),
             ],
@@ -60,15 +62,16 @@ class _CategoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 78,
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: AppTheme.surface,
+          color: c.surface,
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
-          boxShadow: AppTheme.shadowSm,
+          boxShadow: c.shadow,
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -77,10 +80,10 @@ class _CategoryTile extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               category.name,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: AppTheme.textPrimary,
+                color: c.textPrimary,
                 fontFamily: AppTheme.fontFamilyText,
               ),
             ),
@@ -98,30 +101,31 @@ class _AddCategoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 78,
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: AppTheme.surface,
+          color: c.surface,
           borderRadius: BorderRadius.circular(AppTheme.radiusMd),
           border: Border.all(
-            color: AppTheme.divider,
+            color: c.divider,
             style: BorderStyle.solid,
           ),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.add, size: 28, color: AppTheme.textTertiary),
+            Icon(Icons.add, size: 28, color: c.textTertiary),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               '新建',
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: AppTheme.textTertiary,
+                color: c.textTertiary,
                 fontFamily: AppTheme.fontFamilyText,
               ),
             ),

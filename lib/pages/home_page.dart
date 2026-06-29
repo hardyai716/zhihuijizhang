@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
 import '../theme/app_theme.dart';
+import '../core/utils/theme_utils.dart';
 import '../providers/providers.dart';
 import '../widgets/overview_card.dart';
 import '../widgets/record_item.dart';
@@ -28,10 +29,15 @@ class _MainShellState extends ConsumerState<MainShell> {
 
   void _switchTab(int i) => setState(() => _tabIndex = i);
 
+  void _openAddFlow() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => const AddFlowShell()));
+  }
+
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Scaffold(
-      backgroundColor: AppTheme.background,
+      backgroundColor: c.background,
       body: SafeArea(
         child: IndexedStack(
           index: _tabIndex,
@@ -43,54 +49,54 @@ class _MainShellState extends ConsumerState<MainShell> {
           ],
         ),
       ),
-      floatingActionButton: _tabIndex == 0
-          ? SizedBox(
-              width: 64, height: 64,
-              child: FloatingActionButton(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AddFlowShell())),
-                backgroundColor: AppTheme.primary,
-                elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-                child: const Icon(Icons.add, size: 32, color: AppTheme.textOnPrimary),
-              ),
-            )
-          : null,
+      // FAB 在所有 tab 都显示，点击进入记账流程
+      floatingActionButton: SizedBox(
+        width: 64, height: 64,
+        child: FloatingActionButton(
+          onPressed: _openAddFlow,
+          backgroundColor: AppTheme.primary,
+          elevation: 4,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
+          child: const Icon(Icons.add, size: 32, color: AppTheme.textOnPrimary),
+        ),
+      ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-      bottomNavigationBar: _buildBottomNav(),
+      bottomNavigationBar: _buildBottomNav(c),
     );
   }
 
-  Widget _buildBottomNav() {
+  Widget _buildBottomNav(ContextColors c) {
     return Container(
-      decoration: BoxDecoration(color: AppTheme.background, boxShadow: [
+      decoration: BoxDecoration(color: c.surface, boxShadow: [
         BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, -2)),
       ]),
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
           child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-            _nav(Icons.home_rounded, '记账', 0),
-            _nav(Icons.pie_chart_rounded, '统计', 1),
+            _nav(c, Icons.home_rounded, '记账', 0),
+            _nav(c, Icons.pie_chart_rounded, '统计', 1),
             const SizedBox(width: 48),
-            _nav(Icons.list_alt_rounded, '记录', 2),
-            _nav(Icons.settings_rounded, '设置', 3),
+            _nav(c, Icons.list_alt_rounded, '记录', 2),
+            _nav(c, Icons.settings_rounded, '设置', 3),
           ]),
         ),
       ),
     );
   }
 
-  Widget _nav(IconData icon, String label, int idx) {
+  Widget _nav(ContextColors c, IconData icon, String label, int idx) {
     final a = idx == _tabIndex;
+    final color = a ? c.primary : c.textTertiary;
     return GestureDetector(
       onTap: () => _switchTab(idx), behavior: HitTestBehavior.opaque,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(icon, size: 22, color: a ? AppTheme.primary : AppTheme.textTertiary),
+          Icon(icon, size: 22, color: color),
           const SizedBox(height: 2),
           Text(label, style: TextStyle(fontSize: 11, fontWeight: a ? FontWeight.w600 : FontWeight.w400,
-              color: a ? AppTheme.primary : AppTheme.textTertiary)),
+              color: color)),
         ]),
       ),
     );
@@ -108,14 +114,15 @@ class HomeTab extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final txState = ref.watch(transactionNotifierProvider);
     final catState = ref.watch(categoryNotifierProvider);
+    final c = context.colors;
 
     return Column(children: [
       Padding(padding: const EdgeInsets.fromLTRB(20, 12, 20, 0), child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('智慧记账', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)),
-            Text(_today(), style: const TextStyle(fontSize: 12, color: AppTheme.textSecondary)),
+            Text('智慧记账', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: c.textPrimary)),
+            Text(_today(), style: TextStyle(fontSize: 12, color: c.textSecondary)),
           ]),
         ],
       )),
@@ -125,10 +132,10 @@ class HomeTab extends ConsumerWidget {
           const SizedBox(height: 16),
           OverviewCard(expense: txState.monthlyExpense, income: txState.monthlyIncome, balance: txState.monthlyBalance),
           const SizedBox(height: 24),
-          const Text('最近记录', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+          Text('最近记录', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: c.textPrimary)),
           const SizedBox(height: 8),
-          if (txState.recent(3).isEmpty) _empty()
-          else Container(decoration: BoxDecoration(color: AppTheme.surface, borderRadius: BorderRadius.circular(AppTheme.radiusLg), boxShadow: AppTheme.shadowSm),
+          if (txState.recent(3).isEmpty) _empty(c)
+          else Container(decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(AppTheme.radiusLg), boxShadow: c.shadow),
             clipBehavior: Clip.antiAlias,
             child: Column(children: txState.recent(3).map((t) => RecordItem(transaction: t, categories: catState.categories)).toList())),
           const SizedBox(height: 100),
@@ -137,14 +144,14 @@ class HomeTab extends ConsumerWidget {
     ]);
   }
 
-  Widget _empty() {
-    return Container(padding: const EdgeInsets.symmetric(vertical: 40), decoration: BoxDecoration(color: AppTheme.surface, borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
-      child: const Center(child: Column(children: [
-        Icon(Icons.receipt_long_outlined, size: 48, color: AppTheme.textTertiary),
-        SizedBox(height: 12),
-        Text('还没有记录', style: TextStyle(fontSize: 14, color: AppTheme.textSecondary)),
-        SizedBox(height: 4),
-        Text('点击下方 + 开始记账', style: TextStyle(fontSize: 12, color: AppTheme.textTertiary)),
+  Widget _empty(ContextColors c) {
+    return Container(padding: const EdgeInsets.symmetric(vertical: 40), decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(AppTheme.radiusLg)),
+      child: Center(child: Column(children: [
+        Icon(Icons.receipt_long_outlined, size: 48, color: c.textTertiary),
+        const SizedBox(height: 12),
+        Text('还没有记录', style: TextStyle(fontSize: 14, color: c.textSecondary)),
+        const SizedBox(height: 4),
+        Text('点击下方 + 开始记账', style: TextStyle(fontSize: 12, color: c.textTertiary)),
       ])));
   }
 
@@ -222,60 +229,61 @@ class _StatsTabState extends ConsumerState<StatsTab> {
   Widget build(BuildContext context) {
     final txState = ref.watch(transactionNotifierProvider);
     final catState = ref.watch(categoryNotifierProvider);
+    final c = context.colors;
     final filtered = _filteredTx(txState.all);
     final byCat = _groupByCategory(filtered);
     final total = byCat.values.fold(0.0, (a, b) => a + b);
     final (start, end) = _dateRange;
 
     return Column(children: [
-      const Padding(padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
+      Padding(padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
         child: Align(alignment: Alignment.centerLeft,
-          child: Text('统计', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)))),
+          child: Text('统计', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: c.textPrimary)))),
       Expanded(child: SingleChildScrollView(padding: const EdgeInsets.all(20), child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // 时间段切换
           Container(padding: const EdgeInsets.all(4), decoration: BoxDecoration(
-            color: AppTheme.surfaceSecondary, borderRadius: BorderRadius.circular(AppTheme.radiusFull)),
+            color: c.surfaceSecondary, borderRadius: BorderRadius.circular(AppTheme.radiusFull)),
             child: Row(children: [
-              _periodBtn('周度', _StatsPeriod.week),
-              _periodBtn('月度', _StatsPeriod.month),
-              _periodBtn('年度', _StatsPeriod.year),
+              _periodBtn(c, '周度', _StatsPeriod.week),
+              _periodBtn(c, '月度', _StatsPeriod.month),
+              _periodBtn(c, '年度', _StatsPeriod.year),
             ])),
           const SizedBox(height: 16),
 
           // 日期范围行 + 支出/收入切换
           Row(children: [
-            IconButton(onPressed: () => _shiftPeriod(-1), icon: Icon(Icons.chevron_left, size: 22, color: AppTheme.textSecondary)),
-            Expanded(child: Center(child: Text(_periodLabel(start, end), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)))),
-            IconButton(onPressed: () => _shiftPeriod(1), icon: Icon(Icons.chevron_right, size: 22, color: AppTheme.textSecondary)),
+            IconButton(onPressed: () => _shiftPeriod(-1), icon: Icon(Icons.chevron_left, size: 22, color: c.textSecondary)),
+            Expanded(child: Center(child: Text(_periodLabel(start, end), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: c.textPrimary)))),
+            IconButton(onPressed: () => _shiftPeriod(1), icon: Icon(Icons.chevron_right, size: 22, color: c.textSecondary)),
             const SizedBox(width: 8),
             // 支出/收入切换
             Container(padding: const EdgeInsets.all(3), decoration: BoxDecoration(
-              color: AppTheme.surfaceSecondary, borderRadius: BorderRadius.circular(AppTheme.radiusFull)),
+              color: c.surfaceSecondary, borderRadius: BorderRadius.circular(AppTheme.radiusFull)),
               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                _eiBtn('支出', _ExpenseIncome.expense),
-                _eiBtn('收入', _ExpenseIncome.income),
+                _eiBtn(c, '支出', _ExpenseIncome.expense),
+                _eiBtn(c, '收入', _ExpenseIncome.income),
               ])),
           ]),
           const SizedBox(height: 24),
 
           // 环形图区域
           Container(padding: const EdgeInsets.all(24), decoration: BoxDecoration(
-            color: AppTheme.surface, borderRadius: BorderRadius.circular(AppTheme.radiusLg), boxShadow: AppTheme.shadowSm),
+            color: c.surface, borderRadius: BorderRadius.circular(AppTheme.radiusLg), boxShadow: c.shadow),
             child: total > 0
               ? Column(children: [
-                  SizedBox(height: 200, child: _RingChart(byCat: byCat, total: total)),
+                  SizedBox(height: 200, child: _RingChart(byCat: byCat, total: total, isDark: c.isDark)),
                   const SizedBox(height: 16),
                   Text('¥${total.toInt()}',
-                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, fontFamily: AppTheme.fontFamilyNumber, color: AppTheme.textPrimary)),
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, fontFamily: AppTheme.fontFamilyNumber, color: c.textPrimary)),
                   Text(_eiToggle == _ExpenseIncome.expense ? '总支出' : '总收入',
-                    style: TextStyle(fontSize: 13, color: AppTheme.textTertiary)),
+                    style: TextStyle(fontSize: 13, color: c.textTertiary)),
                 ])
               : Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
                   const SizedBox(height: 60),
                   Text(_eiToggle == _ExpenseIncome.expense ? '暂无支出数据' : '暂无收入数据',
-                    style: TextStyle(color: AppTheme.textTertiary)),
+                    style: TextStyle(color: c.textTertiary)),
                 ]))),
           const SizedBox(height: 20),
 
@@ -286,8 +294,8 @@ class _StatsTabState extends ConsumerState<StatsTab> {
             return Padding(padding: const EdgeInsets.only(bottom: 10), child: Row(children: [
               Text(cat?.icon ?? '📌', style: const TextStyle(fontSize: 18)),
               const SizedBox(width: 10),
-              Expanded(child: Text(cat?.name ?? '未知', style: const TextStyle(fontSize: 14, color: AppTheme.textPrimary))),
-              Text('¥${e.value.toInt()}', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppTheme.textPrimary, fontFamily: AppTheme.fontFamilyNumber)),
+              Expanded(child: Text(cat?.name ?? '未知', style: TextStyle(fontSize: 14, color: c.textPrimary))),
+              Text('¥${e.value.toInt()}', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: c.textPrimary, fontFamily: AppTheme.fontFamilyNumber)),
             ]));
           }),
 
@@ -297,25 +305,25 @@ class _StatsTabState extends ConsumerState<StatsTab> {
     ]);
   }
 
-  Widget _periodBtn(String label, _StatsPeriod p) {
+  Widget _periodBtn(ContextColors c, String label, _StatsPeriod p) {
     final active = _period == p;
     return Expanded(child: GestureDetector(
       onTap: () => setState(() => _period = p),
       child: Container(padding: const EdgeInsets.symmetric(vertical: 9),
-        decoration: active ? BoxDecoration(color: AppTheme.surface, borderRadius: BorderRadius.circular(AppTheme.radiusFull), boxShadow: AppTheme.shadowSm) : null,
+        decoration: active ? BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(AppTheme.radiusFull), boxShadow: c.shadow) : null,
         child: Text(label, textAlign: TextAlign.center,
           style: TextStyle(fontSize: 13, fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-            color: active ? AppTheme.primary : AppTheme.textSecondary)))));
+            color: active ? c.primary : c.textSecondary)))));
   }
 
-  Widget _eiBtn(String label, _ExpenseIncome ei) {
+  Widget _eiBtn(ContextColors c, String label, _ExpenseIncome ei) {
     final active = _eiToggle == ei;
     return GestureDetector(
       onTap: () => setState(() => _eiToggle = ei),
       child: Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        decoration: active ? BoxDecoration(color: AppTheme.surface, borderRadius: BorderRadius.circular(AppTheme.radiusFull), boxShadow: AppTheme.shadowSm) : null,
+        decoration: active ? BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(AppTheme.radiusFull), boxShadow: c.shadow) : null,
         child: Text(label, style: TextStyle(fontSize: 12, fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-          color: active ? (_eiToggle == _ExpenseIncome.expense ? AppTheme.expense : AppTheme.income) : AppTheme.textSecondary))));
+          color: active ? (_eiToggle == _ExpenseIncome.expense ? AppTheme.expense : AppTheme.income) : c.textSecondary))));
   }
 }
 
@@ -326,21 +334,23 @@ class _StatsTabState extends ConsumerState<StatsTab> {
 class _RingChart extends StatelessWidget {
   final Map<String, double> byCat;
   final double total;
-  const _RingChart({required this.byCat, required this.total});
+  final bool isDark;
+  const _RingChart({required this.byCat, required this.total, required this.isDark});
 
   static const _chartColors = [Color(0xFF014DB2), Color(0xFF10B981), Color(0xFFF59E0B), Color(0xFFEF4444), Color(0xFF8B5CF6), Color(0xFFEC4899), Color(0xFF06B6D4)];
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(height: 200, width: double.infinity,
-      child: CustomPaint(painter: _RingPainter(byCat: byCat, total: total), size: Size.infinite));
+      child: CustomPaint(painter: _RingPainter(byCat: byCat, total: total, isDark: isDark), size: Size.infinite));
   }
 }
 
 class _RingPainter extends CustomPainter {
   final Map<String, double> byCat;
   final double total;
-  _RingPainter({required this.byCat, required this.total});
+  final bool isDark;
+  _RingPainter({required this.byCat, required this.total, required this.isDark});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -369,7 +379,7 @@ class _RingPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _RingPainter old) => old.byCat != byCat || old.total != total;
+  bool shouldRepaint(covariant _RingPainter old) => old.byCat != byCat || old.total != total || old.isDark != isDark;
 }
 
 // ══════════════════════════════════
@@ -384,13 +394,14 @@ class RecordsTab extends ConsumerWidget {
     final txState = ref.watch(transactionNotifierProvider);
     final grouped = txState.groupedByMonth;
     final sortedKeys = grouped.keys.toList()..sort((a, b) => b.compareTo(a));
+    final c = context.colors;
 
     return Column(children: [
-      const Padding(padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
+      Padding(padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
         child: Align(alignment: Alignment.centerLeft,
-          child: Text('记录', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)))),
+          child: Text('记录', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: c.textPrimary)))),
       Expanded(child: sortedKeys.isEmpty
-          ? const Center(child: Text('暂无记录', style: TextStyle(color: AppTheme.textTertiary)))
+          ? Center(child: Text('暂无记录', style: TextStyle(color: c.textTertiary)))
           : ListView.builder(padding: const EdgeInsets.all(20), itemCount: sortedKeys.length, itemBuilder: (context, idx) {
         final key = sortedKeys[idx];
         final items = grouped[key]!;
@@ -399,19 +410,19 @@ class RecordsTab extends ConsumerWidget {
 
         return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           const SizedBox(height: 8),
-          Text(_monthLabel(key), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)),
+          Text(_monthLabel(key), style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: c.textPrimary)),
           const SizedBox(height: 8),
           Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(color: AppTheme.surfaceSecondary, borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+            decoration: BoxDecoration(color: c.surfaceSecondary, borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
             child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-              _sum('支出', '-¥${_fmt(monthExpense)}', AppTheme.expense),
-              _sum('收入', '+¥${_fmt(monthIncome)}', AppTheme.income),
-              _sum('结余', '¥${_fmt(monthIncome - monthExpense)}', AppTheme.primary),
+              _sum(c, '支出', '-¥${_fmt(monthExpense)}', AppTheme.expense),
+              _sum(c, '收入', '+¥${_fmt(monthIncome)}', AppTheme.income),
+              _sum(c, '结余', '¥${_fmt(monthIncome - monthExpense)}', c.primary),
             ])),
           const SizedBox(height: 4),
           Builder(builder: (ctx) {
             final catState = ref.watch(categoryNotifierProvider);
-            return Container(decoration: BoxDecoration(color: AppTheme.surface, borderRadius: BorderRadius.circular(AppTheme.radiusLg), boxShadow: AppTheme.shadowSm),
+            return Container(decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(AppTheme.radiusLg), boxShadow: c.shadow),
               clipBehavior: Clip.antiAlias,
               child: Column(children: items.map((t) => RecordItem(transaction: t, categories: catState.categories)).toList()));
           }),
@@ -420,11 +431,11 @@ class RecordsTab extends ConsumerWidget {
     ]);
   }
 
-  Widget _sum(String label, String amount, Color color) {
+  Widget _sum(ContextColors c, String label, String amount, Color color) {
     return Column(mainAxisSize: MainAxisSize.min, children: [
       Text(amount, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: color, fontFamily: AppTheme.fontFamilyNumber)),
       const SizedBox(height: 2),
-      Text(label, style: const TextStyle(fontSize: 11, color: AppTheme.textTertiary)),
+      Text(label, style: TextStyle(fontSize: 11, color: c.textTertiary)),
     ]);
   }
 
@@ -446,44 +457,43 @@ class SettingsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsNotifierProvider);
-    final isDark = toFlutterTheme(settings.themeMode) == ThemeMode.dark ||
-        (toFlutterTheme(settings.themeMode) == ThemeMode.system &&
-            MediaQuery.platformBrightnessOf(context) == Brightness.dark);
+    final c = context.colors;
+    final isDark = c.isDark;
 
     return Column(children: [
-      const Padding(padding: EdgeInsets.fromLTRB(20, 16, 20, 0),
+      Padding(padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
         child: Align(alignment: Alignment.centerLeft,
-          child: Text('设置', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: AppTheme.textPrimary)))),
+          child: Text('设置', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w700, color: c.textPrimary)))),
       Expanded(child: ListView(padding: const EdgeInsets.all(20), children: [
-        _section('数据管理', [
-          _tile(Icons.file_download_outlined, '导出数据', 'CSV / JSON', () => _onExport(context, ref)),
-          _tile(Icons.backup_outlined, '备份与恢复', '本地备份', () => _showToast(context, '备份功能开发中')),
+        _section(c, '数据管理', [
+          _tile(c, Icons.file_download_outlined, '导出数据', 'CSV / JSON', () => _onExport(context, ref)),
+          _tile(c, Icons.backup_outlined, '备份与恢复', '本地备份', () => _showToast(context, '备份功能开发中')),
         ]),
         const SizedBox(height: 12),
-        _section('记账设置', [
-          _tile(Icons.category_outlined, '分类管理', '', () {
+        _section(c, '记账设置', [
+          _tile(c, Icons.category_outlined, '分类管理', '', () {
             Navigator.push(context, MaterialPageRoute(builder: (_) => const CategoryMgmtPage()));
           }),
           // 深色模式开关（带状态）
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(children: [
-              const Icon(Icons.dark_mode_outlined, size: 22, color: AppTheme.textSecondary),
+              Icon(Icons.dark_mode_outlined, size: 22, color: c.textSecondary),
               const SizedBox(width: 12),
-              const Expanded(child: Text('深色模式', style: TextStyle(fontSize: 15, color: AppTheme.textPrimary))),
+              Expanded(child: Text('深色模式', style: TextStyle(fontSize: 15, color: c.textPrimary))),
               Switch(
                 value: isDark,
                 onChanged: (v) {
                   ref.read(settingsNotifierProvider.notifier).setThemeMode(v ? AppThemeMode.dark : AppThemeMode.light);
                 },
-                activeColor: AppTheme.primary,
+                activeColor: c.primary,
               ),
             ]),
           ),
         ]),
         const SizedBox(height: 12),
-        _section('关于', [
-          _tile(Icons.info_outline, '版本', 'v1.0.0', () => _showVersionDialog(context)),
+        _section(c, '关于', [
+          _tile(c, Icons.info_outline, '版本', 'v1.0.0', () => _showVersionDialog(context)),
         ]),
       ])),
     ]);
@@ -544,26 +554,26 @@ class SettingsTab extends ConsumerWidget {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), duration: const Duration(seconds: 2)));
   }
 
-  Widget _section(String title, List<Widget> children) {
-    return Container(decoration: BoxDecoration(color: AppTheme.surface, borderRadius: BorderRadius.circular(AppTheme.radiusLg), boxShadow: AppTheme.shadowSm),
+  Widget _section(ContextColors c, String title, List<Widget> children) {
+    return Container(decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(AppTheme.radiusLg), boxShadow: c.shadow),
       clipBehavior: Clip.antiAlias,
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
-          child: Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppTheme.textTertiary))),
+          child: Text(title, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c.textTertiary))),
         ...children,
       ]));
   }
 
-  Widget _tile(IconData icon, String title, String subtitle, VoidCallback onTap) {
+  Widget _tile(ContextColors c, IconData icon, String title, String subtitle, VoidCallback onTap) {
     return InkWell(onTap: onTap, child: Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(children: [
-        Icon(icon, size: 22, color: AppTheme.textSecondary),
+        Icon(icon, size: 22, color: c.textSecondary),
         const SizedBox(width: 12),
-        Expanded(child: Text(title, style: const TextStyle(fontSize: 15, color: AppTheme.textPrimary))),
-        if (subtitle.isNotEmpty) Text(subtitle, style: const TextStyle(fontSize: 13, color: AppTheme.textTertiary)),
+        Expanded(child: Text(title, style: TextStyle(fontSize: 15, color: c.textPrimary))),
+        if (subtitle.isNotEmpty) Text(subtitle, style: TextStyle(fontSize: 13, color: c.textTertiary)),
         const SizedBox(width: 4),
-        const Icon(Icons.chevron_right, size: 20, color: AppTheme.textTertiary),
+        Icon(Icons.chevron_right, size: 20, color: c.textTertiary),
       ])));
   }
 }
@@ -578,38 +588,39 @@ class CategoryMgmtPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final catState = ref.watch(categoryNotifierProvider);
+    final c = context.colors;
 
-    return Scaffold(backgroundColor: AppTheme.background, appBar: AppBar(title: const Text('分类管理'),
+    return Scaffold(backgroundColor: c.background, appBar: AppBar(title: const Text('分类管理'),
         leading: IconButton(icon: const Icon(Icons.arrow_back_ios, size: 18), onPressed: () => Navigator.pop(context))),
       body: ListView(padding: const EdgeInsets.all(20), children: [
-        _catGroup(context, ref, '支出分类', catState.expenseCategories),
+        _catGroup(context, ref, c, '支出分类', catState.expenseCategories),
         const SizedBox(height: 20),
-        _catGroup(context, ref, '收入分类', catState.incomeCategories),
+        _catGroup(context, ref, c, '收入分类', catState.incomeCategories),
         const SizedBox(height: 16),
         OutlinedButton.icon(onPressed: () => _showAddDialog(context, ref), icon: const Icon(Icons.add, size: 18),
           label: const Text('新增分类'),
-          style: OutlinedButton.styleFrom(foregroundColor: AppTheme.textSecondary, side: const BorderSide(color: AppTheme.divider),
+          style: OutlinedButton.styleFrom(foregroundColor: c.textSecondary, side: BorderSide(color: c.divider),
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppTheme.radiusMd)))),
       ]));
   }
 
-  Widget _catGroup(BuildContext context, WidgetRef ref, String title, List<Category> categories) {
+  Widget _catGroup(BuildContext context, WidgetRef ref, ContextColors c, String title, List<Category> categories) {
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-      Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textTertiary)),
+      Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.textTertiary)),
       const SizedBox(height: 8),
-      Container(decoration: BoxDecoration(color: AppTheme.surface, borderRadius: BorderRadius.circular(AppTheme.radiusLg), boxShadow: AppTheme.shadowSm),
+      Container(decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(AppTheme.radiusLg), boxShadow: c.shadow),
         clipBehavior: Clip.antiAlias,
-        child: Column(children: categories.map((c) => InkWell(
-          onTap: () => _showEditDialog(context, ref, c),
+        child: Column(children: categories.map((cat) => InkWell(
+          onTap: () => _showEditDialog(context, ref, cat),
           child: Padding(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             child: Row(children: [
-              Text(c.icon, style: const TextStyle(fontSize: 22)),
+              Text(cat.icon, style: const TextStyle(fontSize: 22)),
               const SizedBox(width: 12),
-              Expanded(child: Text(c.name, style: const TextStyle(fontSize: 15, color: AppTheme.textPrimary))),
-              IconButton(icon: const Icon(Icons.delete_outline, size: 20, color: AppTheme.textTertiary),
-                onPressed: () => _confirmAndDelete(context, ref, c)),
-              ReorderableDragStartListener(index: categories.indexOf(c), child: const Icon(Icons.drag_handle, color: AppTheme.textTertiary)),
+              Expanded(child: Text(cat.name, style: TextStyle(fontSize: 15, color: c.textPrimary))),
+              IconButton(icon: Icon(Icons.delete_outline, size: 20, color: c.textTertiary),
+                onPressed: () => _confirmAndDelete(context, ref, cat)),
+              ReorderableDragStartListener(index: categories.indexOf(cat), child: Icon(Icons.drag_handle, color: c.textTertiary)),
             ])))).toList())),
     ]);
   }
@@ -683,8 +694,9 @@ class _AddFlowShellState extends ConsumerState<AddFlowShell> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return WillPopScope(onWillPop: () async { _prev(); return false; },
-      child: Scaffold(backgroundColor: AppTheme.background, body: SafeArea(child: IndexedStack(index: _step, children: [
+      child: Scaffold(backgroundColor: c.background, body: SafeArea(child: IndexedStack(index: _step, children: [
         _StepCategory(kind: _kind, onSelect: (id) { _categoryId = id; _next(); }, onBack: _prev),
         _StepAmount(categoryId: _categoryId ?? '', kind: _kind, onChangeKind: (k) => setState(() => _kind = k),
             onConfirm: (amount) { _amount = amount; _next(); }, onBack: _prev),
@@ -761,6 +773,7 @@ class _StepAmountState extends ConsumerState<_StepAmount> {
     final amount = double.tryParse(_display) ?? 0;
     final catState = ref.watch(categoryNotifierProvider);
     final cat = catState.findById(widget.categoryId);
+    final c = context.colors;
 
     return Column(children: [
       _topBar('输入金额', onBack: widget.onBack),
@@ -778,7 +791,7 @@ class _StepAmountState extends ConsumerState<_StepAmount> {
           const SizedBox(height: 12),
           Text('¥$_display', style: const TextStyle(fontSize: 48, fontWeight: FontWeight.w700, color: Colors.white, fontFamily: AppTheme.fontFamilyNumber, letterSpacing: -1)),
         ])),
-      Expanded(child: Container(color: AppTheme.surface, padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
+      Expanded(child: Container(color: c.surface, padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
         child: NumberPad(onKeyTap: _onKey, onDelete: _onDelete, onConfirm: () { if (amount > 0) widget.onConfirm(amount); }))),
     ]);
   }
@@ -798,6 +811,7 @@ class _StepNote extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Column(children: [
       _topBar('添加备注', onBack: onBack),
       Expanded(child: SingleChildScrollView(
@@ -807,9 +821,9 @@ class _StepNote extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: AppTheme.surfaceSecondary, borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
+              decoration: BoxDecoration(color: c.surfaceSecondary, borderRadius: BorderRadius.circular(AppTheme.radiusMd)),
               child: Text('¥${_fmt(amount)}', textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: AppTheme.textPrimary, fontFamily: AppTheme.fontFamilyNumber)),
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: c.textPrimary, fontFamily: AppTheme.fontFamilyNumber)),
             ),
             const SizedBox(height: 20),
             TextField(maxLines: 3, maxLength: 200, decoration: const InputDecoration(hintText: '添加备注（选填）'), onChanged: onNoteChanged),
@@ -818,8 +832,8 @@ class _StepNote extends StatelessWidget {
               children: ['午餐', '晚餐', '打车', '购物', '日用'].map((t) => GestureDetector(
                 onTap: () => onNoteChanged(t),
                 child: Container(padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(color: AppTheme.surfaceSecondary, borderRadius: BorderRadius.circular(AppTheme.radiusFull)),
-                  child: Text(t, style: const TextStyle(fontSize: 13, color: AppTheme.textSecondary)),
+                  decoration: BoxDecoration(color: c.surfaceSecondary, borderRadius: BorderRadius.circular(AppTheme.radiusFull)),
+                  child: Text(t, style: TextStyle(fontSize: 13, color: c.textSecondary)),
                 ),
               )).toList()),
             const SizedBox(height: 40),
@@ -838,12 +852,15 @@ class _StepNote extends StatelessWidget {
 // ══════════════════════════════════
 
 Widget _topBar(String title, {VoidCallback? onBack}) {
-  return Container(height: 56, padding: const EdgeInsets.symmetric(horizontal: 4),
-    decoration: const BoxDecoration(color: AppTheme.surface, border: Border(bottom: BorderSide(color: AppTheme.divider, width: 0.5))),
-    child: Row(children: [
-      if (onBack != null) IconButton(icon: const Icon(Icons.arrow_back_ios, size: 18), onPressed: onBack),
-      if (onBack != null) const SizedBox(width: 8),
-      Text(title, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: AppTheme.textPrimary)), const Spacer(),
-      IconButton(icon: const Icon(Icons.close, size: 20, color: AppTheme.textSecondary), onPressed: onBack ?? () {}),
-    ]));
+  return Builder(builder: (context) {
+    final c = context.colors;
+    return Container(height: 56, padding: const EdgeInsets.symmetric(horizontal: 4),
+      decoration: BoxDecoration(color: c.surface, border: Border(bottom: BorderSide(color: c.divider, width: 0.5))),
+      child: Row(children: [
+        if (onBack != null) IconButton(icon: const Icon(Icons.arrow_back_ios, size: 18), onPressed: onBack),
+        if (onBack != null) const SizedBox(width: 8),
+        Text(title, style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: c.textPrimary)), const Spacer(),
+        IconButton(icon: const Icon(Icons.close, size: 20, color: AppTheme.textSecondary), onPressed: onBack ?? () {}),
+      ]));
+  });
 }

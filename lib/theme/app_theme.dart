@@ -122,6 +122,9 @@ class AppTheme {
         surface: surface,
         onSurface: textPrimary,
         error: expense,
+        surfaceContainerHigh: Color(0xFFF1F5F9),
+        surfaceContainerHighest: Color(0xFFE2E8F0),
+        outlineVariant: Color(0xFFE2E8F0),
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: surface,
@@ -212,6 +215,9 @@ class AppTheme {
         surface: darkSurface,
         onSurface: darkTextPrimary,
         error: expense,
+        surfaceContainerHigh: darkSurfaceSecondary,
+        surfaceContainerHighest: Color(0xFF475569),
+        outlineVariant: darkDivider,
       ),
       appBarTheme: AppBarTheme(
         backgroundColor: darkSurface,

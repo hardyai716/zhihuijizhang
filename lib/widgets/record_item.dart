@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../core/utils/theme_utils.dart';
 import '../domain/entities/transaction.dart';
 import '../domain/entities/category.dart';
 
@@ -22,12 +23,13 @@ class RecordItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final category = _findCategory(categories, transaction.categoryId);
     final isExpense = transaction.kind == TransactionKind.expense;
+    final c = context.colors;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: AppTheme.divider, width: 0.5),
+          bottom: BorderSide(color: c.divider, width: 0.5),
         ),
       ),
       child: Row(
@@ -37,7 +39,7 @@ class RecordItem extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: AppTheme.surfaceSecondary,
+              color: c.surfaceSecondary,
               borderRadius: BorderRadius.circular(AppTheme.radiusSm),
             ),
             alignment: Alignment.center,
@@ -54,10 +56,10 @@ class RecordItem extends StatelessWidget {
               children: [
                 Text(
                   category?.name ?? '未分类',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: AppTheme.textPrimary,
+                    color: c.textPrimary,
                     fontFamily: AppTheme.fontFamilyText,
                   ),
                 ),
@@ -67,9 +69,9 @@ class RecordItem extends StatelessWidget {
                     transaction.note,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: AppTheme.textTertiary,
+                      color: c.textTertiary,
                       fontFamily: AppTheme.fontFamilyText,
                     ),
                   ),
@@ -86,7 +88,7 @@ class RecordItem extends StatelessWidget {
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.w600,
-              color: isExpense ? AppTheme.textPrimary : AppTheme.income,
+              color: isExpense ? c.textPrimary : AppTheme.income,
               fontFamily: AppTheme.fontFamilyNumber,
             ),
           ),

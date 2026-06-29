@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
+import '../core/utils/theme_utils.dart';
 
 /// 收支概览卡片
 /// 设计稿位置: 记账主页 3:3 / 统计页 3:4
@@ -27,7 +28,7 @@ class OverviewCard extends StatelessWidget {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(AppTheme.radiusLg),
-        boxShadow: AppTheme.shadowMd,
+        boxShadow: context.colors.shadow,
       ),
       child: Column(
         children: [
@@ -119,24 +120,25 @@ class MonthSummaryBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.colors;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppTheme.surfaceSecondary,
+        color: c.surfaceSecondary,
         borderRadius: BorderRadius.circular(AppTheme.radiusMd),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
-          _buildItem('支出', '-¥${_fmt(expense)}', AppTheme.expense),
-          _buildItem('收入', '+¥${_fmt(income)}', AppTheme.income),
-          _buildItem('结余', '¥${_fmt(balance)}', AppTheme.primary),
+          _buildItem(c, '支出', '-¥${_fmt(expense)}', AppTheme.expense),
+          _buildItem(c, '收入', '+¥${_fmt(income)}', AppTheme.income),
+          _buildItem(c, '结余', '¥${_fmt(balance)}', AppTheme.primary),
         ],
       ),
     );
   }
 
-  Widget _buildItem(String label, String amount, Color color) {
+  Widget _buildItem(ContextColors c, String label, String amount, Color color) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -148,8 +150,8 @@ class MonthSummaryBar extends StatelessWidget {
         ),
         const SizedBox(height: 2),
         Text(label,
-          style: const TextStyle(
-            fontSize: 11, color: AppTheme.textTertiary,
+          style: TextStyle(
+            fontSize: 11, color: c.textTertiary,
             fontFamily: AppTheme.fontFamilyText,
           ),
         ),
